@@ -33,7 +33,7 @@ psql --version
 
 **التحقق:**
 ```bash
-sudo -u postgres psql -d school_management -c "SELECT 1;"
+sudo -u postgres psql -d school_manage -c "SELECT 1;"
 # يجب أن يظهر: ?column? 1
 ```
 
