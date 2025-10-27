@@ -19,7 +19,7 @@ module.exports = {
     // متغيرات البيئة للإنتاج
     env_production: {
       NODE_ENV: 'production',
-      PORT: 5000,
+      PORT: 3055,
       DATABASE_URL: 'postgresql://school_admin:HnrrTXXWyEc58kxR@localhost:5433/school_management',
       SESSION_SECRET: 'HnrrTXXWyEc58kxR-random-secret-key-12345',
       TZ: 'Asia/Riyadh'
@@ -28,7 +28,7 @@ module.exports = {
     // متغيرات البيئة للتطوير (اختياري)
     env_development: {
       NODE_ENV: 'development',
-      PORT: 3001
+      PORT: 3055
     },
     
     // إعادة التشغيل التلقائي عند استهلاك 500MB من الذاكرة
