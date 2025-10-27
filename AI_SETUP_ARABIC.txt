@@ -1,0 +1,180 @@
+🤖 توجيه للذكاء الاصطناعي: تنصيب نظام إدارة المدرسة
+
+نصّب نظام إدارة المدرسة (React + Express + PostgreSQL) على VPS أو جهاز محلي.
+
+⚠️ معلومة مهمة: البرنامج يكتشف تلقائياً نوع قاعدة البيانات من DATABASE_URL:
+   • إذا DATABASE_URL يحتوي على "neon.tech" → يستخدم Neon Serverless
+   • غير ذلك → يستخدم PostgreSQL العادي
+   • لا تحتاج تغيير أي كود!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 خطوات التنصيب الكاملة:
+
+1️⃣ تثبيت PostgreSQL وتشغيله:
+
+sudo apt update
+sudo apt install postgresql postgresql-contrib -y
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# التحقق من التشغيل (يجب أن ترى: Active: active)
+sudo systemctl status postgresql
+
+
+2️⃣ إنشاء قاعدة البيانات والمستخدم مع جميع الصلاحيات:
+
+sudo -u postgres psql << 'EOFDB'
+CREATE DATABASE school_management;
+CREATE USER school_admin WITH PASSWORD 'StrongPassword@123';
+GRANT ALL PRIVILEGES ON DATABASE school_management TO school_admin;
+\c school_management
+GRANT ALL ON SCHEMA public TO school_admin;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO school_admin;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO school_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO school_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO school_admin;
+EOFDB
+
+⚠️ ملاحظة: غيّر "StrongPassword@123" لكلمة مرور قوية!
+
+
+3️⃣ إنشاء ملف .env (متغيرات البيئة):
+
+# نسخ النموذج
+cp .env.example .env
+
+# إنشاء SESSION_SECRET عشوائي
+SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+
+# كتابة .env
+cat > .env << EOFENV
+DATABASE_URL=postgresql://school_admin:StrongPassword@123@localhost:5432/school_management
+SESSION_SECRET=${SECRET}
+NODE_ENV=production
+PORT=5000
+TZ=Asia/Riyadh
+EOFENV
+
+⚠️ تذكّر: استبدل "StrongPassword@123" بنفس الكلمة من الخطوة 2!
+
+
+4️⃣ تثبيت المكتبات (Dependencies):
+
+npm install
+
+⚠️ ملاحظة: قد يستغرق بضع دقائق - هذا طبيعي
+
+
+5️⃣ إنشاء جداول قاعدة البيانات:
+
+npm run db:push
+
+# إذا ظهر تحذير "data-loss"، استخدم:
+npm run db:push --force
+
+
+6️⃣ تشغيل التطبيق:
+
+# للتطوير والاختبار:
+npm run dev
+
+# للإنتاج (بعد البناء):
+npm run build
+npm start
+
+
+7️⃣ التحقق من النجاح:
+
+✅ في console يجب أن ترى:
+   "📊 استخدام PostgreSQL العادي (Standard)"
+   "✅ الاتصال بـ PostgreSQL ناجح!"
+   "serving on port 5000"
+
+✅ افتح المتصفح على: http://localhost:5000
+
+✅ بيانات الدخول الأولية:
+   Username: admin
+   Password: موجود في ملف ADMIN_CREDENTIALS.txt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 حل الأخطاء الشائعة:
+
+❌ "ECONNREFUSED" أو "connect ECONNREFUSED":
+   → PostgreSQL لا يعمل
+   ✅ الحل: sudo systemctl start postgresql
+
+❌ "password authentication failed":
+   → كلمة المرور خطأ في DATABASE_URL
+   ✅ الحل: 
+      sudo -u postgres psql
+      ALTER USER school_admin WITH PASSWORD 'كلمة_جديدة';
+      \q
+      # عدّل .env وحط الكلمة الجديدة
+
+❌ "database does not exist":
+   → قاعدة البيانات غير موجودة
+   ✅ الحل:
+      sudo -u postgres psql
+      CREATE DATABASE school_management;
+      \q
+
+❌ "role does not exist":
+   → المستخدم غير موجود
+   ✅ الحل:
+      sudo -u postgres psql
+      CREATE USER school_admin WITH PASSWORD 'كلمة_قوية';
+      GRANT ALL PRIVILEGES ON DATABASE school_management TO school_admin;
+      \q
+
+❌ "permission denied for schema public":
+   → المستخدم بدون صلاحيات
+   ✅ الحل:
+      sudo -u postgres psql -d school_management
+      GRANT ALL ON SCHEMA public TO school_admin;
+      GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO school_admin;
+      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO school_admin;
+      \q
+
+❌ "DATABASE_URL must be set":
+   → ملف .env مفقود أو فارغ
+   ✅ الحل: راجع الخطوة 3 أعلاه
+
+❌ "relation does not exist" أو "table does not exist":
+   → الجداول غير موجودة
+   ✅ الحل: npm run db:push --force
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 اختبار سريع للاتصال:
+
+# من command line:
+psql "postgresql://school_admin:كلمة_المرور@localhost:5432/school_management"
+
+# إذا نجح، جرّب:
+\dt   # عرض الجداول
+\q    # خروج
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 ملفات مساعدة إضافية:
+
+• TROUBLESHOOTING_AR.md - دليل شامل لحل جميع المشاكل المحتملة
+• DATABASE_CONNECTION_GUIDE.md - دليل تفصيلي للاتصال بقاعدة البيانات
+• VPS_DEPLOYMENT_GUIDE_AR.md - دليل النشر الكامل على VPS
+• .env.example - نموذج متغيرات البيئة
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 ملاحظات مهمة:
+
+1. استخدم كلمة مرور قوية (16+ حرف، أرقام، رموز)
+2. SESSION_SECRET يجب أن يكون عشوائي (64 حرف)
+3. على VPS: غيّر PORT إلى 3001 واستخدم Nginx
+4. لا تفتح منفذ PostgreSQL (5432) للعامة - خطر أمني!
+5. استخدم pm2 لإدارة التطبيق في الإنتاج
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+نفّذ الخطوات بالترتيب. إذا واجهت أي خطأ، راجع TROUBLESHOOTING_AR.md

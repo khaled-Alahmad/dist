@@ -1,0 +1,58 @@
+قم بتنصيب نظام إدارة المدرسة هذا (School Management System - React + Express + PostgreSQL) على VPS/Local:
+
+## البيئة والقاعدة:
+البرنامج يكتشف نوع قاعدة البيانات تلقائياً من DATABASE_URL (إذا فيها "neon.tech" → Neon، غير هيك → PostgreSQL عادي)
+
+## خطوات التنصيب:
+
+### 1. PostgreSQL (للـ VPS/Local):
+sudo apt update && sudo apt install postgresql postgresql-contrib -y
+sudo systemctl start postgresql && sudo systemctl enable postgresql
+
+sudo -u postgres psql << 'EOF'
+CREATE DATABASE school_management;
+CREATE USER school_admin WITH PASSWORD 'StrongPass123!@#';
+GRANT ALL PRIVILEGES ON DATABASE school_management TO school_admin;
+\c school_management
+GRANT ALL ON SCHEMA public TO school_admin;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO school_admin;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO school_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO school_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO school_admin;
+EOF
+
+### 2. متغيرات البيئة:
+cp .env.example .env
+
+cat > .env << 'EOF'
+DATABASE_URL=postgresql://school_admin:StrongPass123!@#@localhost:5432/school_management
+SESSION_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+NODE_ENV=production
+PORT=5000
+EOF
+
+### 3. Dependencies و Database:
+npm install
+npm run db:push
+
+### 4. تشغيل:
+# Development:
+npm run dev
+
+# Production:
+npm run build
+npm start
+
+## التحقق:
+- يجب أن ترى: "📊 Using Standard PostgreSQL Database" (للـ VPS/Local) أو "Using Neon Serverless" (للـ Neon)
+- ثم: "serving on port 5000"
+- افتح: http://localhost:5000
+- الدخول: username=admin, password=(شوف ADMIN_CREDENTIALS.txt)
+
+## حل الأخطاء السريع:
+- ECONNREFUSED → sudo systemctl start postgresql
+- password failed → sudo -u postgres psql ثم ALTER USER school_admin WITH PASSWORD 'NewPass';
+- database not exist → sudo -u postgres psql ثم CREATE DATABASE school_management;
+- permission denied → sudo -u postgres psql -d school_management ثم GRANT ALL ON SCHEMA public TO school_admin;
+
+ملاحظات: لا تغيّر الكود (يكتشف القاعدة تلقائياً)، استخدم SESSION_SECRET عشوائي، على VPS استخدم PORT=3001 مع Nginx.

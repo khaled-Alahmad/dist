@@ -1,0 +1,7 @@
+GRANT ALL PRIVILEGES ON DATABASE school_management TO school_admin;
+\connect school_management
+GRANT ALL ON SCHEMA public TO school_admin;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO school_admin;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO school_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO school_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO school_admin;
